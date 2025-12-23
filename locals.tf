@@ -750,7 +750,7 @@ controller:
     )
   ) : local.nginx_values_base
 
-  hetzner_ccm_values = var.hetzner_ccm_values != "" ? var.hetzner_ccm_values : <<EOT
+  hetzner_ccm_values_default = <<EOT
 networking:
   enabled: true
   clusterCIDR: "${var.cluster_ipv4_cidr}"
@@ -774,6 +774,15 @@ env:
 # Use host network to avoid circular dependency with CNI
 hostNetwork: true
   EOT
+
+  hetzner_ccm_values_base = var.hetzner_ccm_values != "" ? var.hetzner_ccm_values : local.hetzner_ccm_values_default
+
+  hetzner_ccm_values = var.hetzner_ccm_merge_values != "" ? yamlencode(
+    provider::deepmerge::mergo(
+      yamldecode(local.hetzner_ccm_values_base),
+      yamldecode(var.hetzner_ccm_merge_values)
+    )
+  ) : local.hetzner_ccm_values_base
 
   haproxy_values_default = <<EOT
 controller:
