@@ -34,8 +34,17 @@ ${cloudinit_runcmd_common}
 
 # Configure default routes based on public ip availability
 %{if private_network_only~}
-# Private-only setup: eth0 is the private interface
-- [ip, route, add, default, via, '${network_gw_ipv4}', dev, 'enp7s0', metric, '100']
+# Private-only setup: detect the private interface dynamically
+- |
+  PRIV_IF=$(ip -4 route get '${network_gw_ipv4}' 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+  if [ -z "$PRIV_IF" ]; then
+    PRIV_IF=$(ip -4 route show scope link 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+  fi
+  if [ -n "$PRIV_IF" ]; then
+    ip route replace default via '${network_gw_ipv4}' dev "$PRIV_IF" metric 100
+  else
+    echo "WARN: could not determine private interface for default route" >&2
+  fi
 %{else~}
 # Standard setup: eth0 is public, configure both IPv4 and IPv6
 - [ip, route, add, default, via, '172.31.1.1', dev, 'eth0', metric, '100']

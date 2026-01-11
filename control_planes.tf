@@ -71,9 +71,9 @@ resource "hcloud_load_balancer_network" "control_plane" {
   # Use -2 to get the last usable IP in the subnet
   ip = cidrhost(hcloud_network_subnet.control_plane.*.ip_range[0], -2)
 
+  # Keep existing LB IPs stable on upgrade.
   lifecycle {
-    # Removed 'ip' from ignore_changes to allow proper management with hcloud provider 1.56+
-    ignore_changes = []
+    ignore_changes = [ip]
   }
 }
 

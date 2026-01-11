@@ -40,8 +40,8 @@ resource "hcloud_load_balancer_network" "cluster" {
 
   lifecycle {
     create_before_destroy = false
-    # Removed 'ip' from ignore_changes to allow proper management with hcloud provider 1.56+
     ignore_changes = [
+      ip,
       enable_public_interface
     ]
   }

@@ -1038,7 +1038,7 @@ else
 fi
 EOF
 
-  cloudinit_write_files_common = <<EOT
+cloudinit_write_files_common = <<EOT
 # Script to rename the private interface to eth1 and unify NetworkManager connection naming
 - path: /etc/cloud/rename_interface.sh
   content: |
