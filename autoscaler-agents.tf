@@ -220,8 +220,13 @@ resource "null_resource" "autoscaled_nodes_kubelet_config" {
     user           = "root"
     private_key    = var.ssh_private_key
     agent_identity = local.ssh_agent_identity
-    host           = each.value.ipv4_address
+    host           = coalesce(each.value.ipv4_address, each.value.ipv6_address, try(one(each.value.network).ip, null))
     port           = var.ssh_port
+
+    bastion_host        = local.ssh_bastion.bastion_host
+    bastion_port        = local.ssh_bastion.bastion_port
+    bastion_user        = local.ssh_bastion.bastion_user
+    bastion_private_key = local.ssh_bastion.bastion_private_key
   }
 
   provisioner "file" {

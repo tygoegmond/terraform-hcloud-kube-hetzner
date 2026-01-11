@@ -1000,22 +1000,40 @@ fi
 EOF
 
 k3s_kubelet_config_update_script = <<EOF
+set -e
 DATE=`date +%Y-%m-%d_%H-%M-%S`
+BACKUP_FILE="/tmp/kubelet-config_$DATE.yaml"
+HAS_BACKUP=false
+
 if cmp -s /tmp/kubelet-config.yaml /etc/rancher/k3s/kubelet-config.yaml; then
   echo "No update required to the kubelet-config.yaml file"
 else
   if [ -f "/etc/rancher/k3s/kubelet-config.yaml" ]; then
-    echo "Backing up /etc/rancher/k3s/kubelet-config.yaml to /tmp/kubelet-config_$DATE.yaml"
-    cp /etc/rancher/k3s/kubelet-config.yaml /tmp/kubelet-config_$DATE.yaml
+    echo "Backing up /etc/rancher/k3s/kubelet-config.yaml to $BACKUP_FILE"
+    cp /etc/rancher/k3s/kubelet-config.yaml "$BACKUP_FILE"
+    HAS_BACKUP=true
   fi
   echo "Updated kubelet-config.yaml detected, restart of k3s service required"
   cp /tmp/kubelet-config.yaml /etc/rancher/k3s/kubelet-config.yaml
+
+  restart_failed() {
+    echo "Error: Failed to restart k3s service"
+    if [ "$HAS_BACKUP" = true ]; then
+      echo "Restoring from backup $BACKUP_FILE"
+      cp "$BACKUP_FILE" /etc/rancher/k3s/kubelet-config.yaml
+    else
+      echo "No backup available to restore (first-time config)"
+      rm -f /etc/rancher/k3s/kubelet-config.yaml
+    fi
+    exit 1
+  }
+
   if systemctl is-active --quiet k3s; then
-    systemctl restart k3s || (echo "Error: Failed to restart k3s. Restoring /etc/rancher/k3s/kubelet-config.yaml from backup" && cp /tmp/kubelet-config_$DATE.yaml /etc/rancher/k3s/kubelet-config.yaml && systemctl restart k3s)
+    systemctl restart k3s || restart_failed
   elif systemctl is-active --quiet k3s-agent; then
-    systemctl restart k3s-agent || (echo "Error: Failed to restart k3s-agent. Restoring /etc/rancher/k3s/kubelet-config.yaml from backup" && cp /tmp/kubelet-config_$DATE.yaml /etc/rancher/k3s/kubelet-config.yaml && systemctl restart k3s-agent)
+    systemctl restart k3s-agent || restart_failed
   else
-    echo "No active k3s or k3s-agent service found"
+    echo "Warning: No active k3s or k3s-agent service found, skipping restart"
   fi
   echo "k3s service or k3s-agent service (re)started successfully"
 fi

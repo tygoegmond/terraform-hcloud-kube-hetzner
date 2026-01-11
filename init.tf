@@ -487,10 +487,10 @@ resource "null_resource" "kustomization" {
         "kubectl -n system-upgrade wait --for=condition=available --timeout=900s deployment/system-upgrade-controller",
         "sleep 7", # important as the system upgrade controller CRDs sometimes don't get ready right away, especially with Cilium.
         "kubectl -n system-upgrade apply -f /var/post_install/plans.yaml",
-        # Wait for all system deployments, daemonsets and jobs to become available or complete
-        "kubectl wait --all-namespaces deployment --all --for=condition=Available --timeout=600s",
-        "kubectl wait --all-namespaces job --all --for=condition=Complete --timeout=600s",
-        "kubectl wait --all-namespaces pod --for=condition=Ready --field-selector=status.phase!=Succeeded,status.phase!=Failed --timeout=600s"
+        # Wait for system namespace deployments and jobs to become available or complete
+        # Only wait on known system namespaces to avoid blocking on user workloads
+        "for ns in kube-system cert-manager longhorn-system traefik system-upgrade; do kubectl get ns $ns &>/dev/null && kubectl -n $ns wait deployment --all --for=condition=Available --timeout=300s || true; done",
+        "for ns in kube-system cert-manager longhorn-system; do kubectl get ns $ns &>/dev/null && kubectl -n $ns wait job --all --for=condition=Complete --timeout=300s || true; done"
       ],
       local.has_external_load_balancer ? [] : [
         <<-EOT
