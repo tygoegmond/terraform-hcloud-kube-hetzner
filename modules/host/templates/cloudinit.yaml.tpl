@@ -55,8 +55,14 @@ ${cloudinit_runcmd_common}
     awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}'
   }
   PUB_IF=$(ip -4 route get 172.31.1.1 2>/dev/null | route_dev)
+  # Verify we didn't accidentally pick the private interface (can happen if network_ipv4_cidr overlaps 172.31.0.0/16)
+  PRIV_IF=$(ip -4 route get '${network_gw_ipv4}' 2>/dev/null | route_dev)
+  if [ -n "$PRIV_IF" ] && [ "$PUB_IF" = "$PRIV_IF" ]; then
+    echo "WARN: detected interface $PUB_IF matches private interface, clearing to trigger fallback" >&2
+    PUB_IF=""
+  fi
   if [ -z "$PUB_IF" ]; then
-    # Fallback to eth0 if detection fails
+    echo "WARN: could not detect public interface, falling back to eth0" >&2
     PUB_IF="eth0"
   fi
   ip route replace default via 172.31.1.1 dev "$PUB_IF" metric 100
