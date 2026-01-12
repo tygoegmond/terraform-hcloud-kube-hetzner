@@ -889,6 +889,10 @@ ports:
       default: true
     exposedPort: ${option.exposedPort}
     protocol: TCP
+    observability:
+      metrics: false
+      accessLogs: false
+      tracing: false
 %{if !local.using_klipper_lb~}
     proxyProtocol:
       trustedIPs:
