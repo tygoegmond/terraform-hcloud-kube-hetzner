@@ -5,7 +5,7 @@ require {
         init_t, unlabeled_t, systemd_logind_t, systemd_hostnamed_t, container_t,
         cert_t, container_var_lib_t, etc_t, usr_t, container_file_t, container_log_t,
         container_share_t, container_runtime_exec_t, container_runtime_t, var_log_t, proc_t, io_uring_t, fuse_device_t, http_port_t,
-        container_var_run_t;
+        container_var_run_t, fixed_disk_device_t, removable_device_t;
     class key { read view };
     class file { open read execute execute_no_trans create link lock rename write append setattr unlink getattr watch };
     class sock_file { watch write create unlink };
@@ -20,6 +20,7 @@ require {
     class anon_inode { create map read write };
     class tcp_socket name_connect;
     class chr_file { open read write };
+    class blk_file getattr;
 }
 
 #============= kernel_generic_helper_t ==============
@@ -52,6 +53,7 @@ allow container_t { cert_t container_log_t }:lnk_file read;
 allow container_t cert_t:file { read open };
 allow container_t container_var_lib_t:dir { add_name remove_name write read create };
 allow container_t container_var_lib_t:file { append create open read write rename lock setattr getattr unlink };
+allow container_t container_var_lib_t:sock_file write;
 allow container_t etc_t:dir { add_name remove_name write create setattr watch };
 allow container_t etc_t:file { create setattr unlink write };
 allow container_t etc_t:sock_file { create unlink };
@@ -75,3 +77,5 @@ allow container_t self:io_uring sqpoll;
 allow container_t io_uring_t:anon_inode { create map read write };
 allow container_t container_var_run_t:dir { add_name remove_name write };
 allow container_t container_var_run_t:file { create open read rename unlink write };
+allow container_t fixed_disk_device_t:blk_file getattr;
+allow container_t removable_device_t:blk_file getattr;
