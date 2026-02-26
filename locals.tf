@@ -1370,7 +1370,7 @@ cloudinit_runcmd_common = <<EOT
 # by forcing the kvm-clock paravirtualized clocksource from boot
 - |
   if ! grep -q 'clocksource=kvm-clock' /etc/default/grub; then
-    sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)"/\1 clocksource=kvm-clock"/' /etc/default/grub
+    sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT=".*\)"/\1 clocksource=kvm-clock"/' /etc/default/grub
     transactional-update run grub2-mkconfig -o /boot/grub2/grub.cfg
   fi
 
