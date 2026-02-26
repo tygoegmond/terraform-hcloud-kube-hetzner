@@ -1366,6 +1366,14 @@ cloudinit_runcmd_common = <<EOT
 - [chmod, '750', '${dirname(var.k3s_audit_log_path)}']
 - [chown, 'root:root', '${dirname(var.k3s_audit_log_path)}']
 
+# Fix KVM clocksource: prevent node hangs caused by TSC becoming unstable
+# by forcing the kvm-clock paravirtualized clocksource from boot
+- |
+  if ! grep -q 'clocksource=kvm-clock' /etc/default/grub; then
+    sed -i 's/^\(GRUB_CMDLINE_LINUX_DEFAULT="[^"]*\)"/\1 clocksource=kvm-clock"/' /etc/default/grub
+    transactional-update run grub2-mkconfig -o /boot/grub2/grub.cfg
+  fi
+
 # Add logic to truly disable SELinux if disable_selinux = true.
 # We'll do it by appending to cloudinit_runcmd_common.
 %{if var.disable_selinux}
